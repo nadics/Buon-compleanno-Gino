@@ -409,6 +409,7 @@
         ];
 
         let currentSongIndex = -1;
+        let wasMusicPlayingBeforeSequence = false; // Added this specifically for the error chain
 
         musicToggle.onclick = () => {
             musicMenu.classList.toggle('active');
@@ -511,6 +512,15 @@
         // --- VIDEO MODAL LOGIC ---
         function openVideoModal() {
             const videoFrame = document.getElementById('surprise-video');
+            
+            // PAUSE MUSIC LOGIC
+            if (!music.paused) {
+                wasMusicPlayingBeforeSequence = true;
+                music.pause();
+            } else {
+                wasMusicPlayingBeforeSequence = false;
+            }
+
             // Standard birthday greeting video
             videoFrame.src = "for Gino.mp4";
             document.getElementById('video-modal').style.display = 'flex';
@@ -520,6 +530,11 @@
             const videoFrame = document.getElementById('surprise-video');
             videoFrame.src = ""; 
             document.getElementById('video-modal').style.display = 'none';
+
+            // RESUME MUSIC LOGIC
+            if (wasMusicPlayingBeforeSequence) {
+                music.play();
+            }
         }
 
         // --- DINO GAME LOGIC ---
@@ -603,14 +618,23 @@
             }
         }
 
-        window.addEventListener('keydown', (e) => { if (e.code === 'Space' && shockTriggered) handleJump(); });
-        canvas.addEventListener('mousedown', () => { if (shockTriggered) handleJump(); });
+        window.addEventListener('keydown', (e) => { if (e.code === 'Space' && (shockTriggered || document.getElementById('error-screen-2').style.display === 'block')) handleJump(); });
+        canvas.addEventListener('mousedown', () => { if (shockTriggered || document.getElementById('error-screen-2').style.display === 'block') handleJump(); });
 
         // --- ERRORS & CHAIN ---
         function triggerChainError() {
             if (hasTriggeredError || shockTriggered) return;
             shockTriggered = true;
             hasTriggeredError = true;
+
+            // PAUSE MUSIC ON ERROR START
+            if (!music.paused) {
+                wasMusicPlayingBeforeSequence = true;
+                music.pause();
+            } else {
+                wasMusicPlayingBeforeSequence = false;
+            }
+
             const err1 = document.getElementById('error-screen-1');
             const err2 = document.getElementById('error-screen-2');
             const reloadBtn = document.getElementById('reload-to-offline');
@@ -658,6 +682,11 @@
             setTimeout(() => {
                 document.getElementById('scare-heart').style.display = 'none';
                 shockTriggered = false;
+                
+                // RESUME MUSIC AFTER ERROR OVER
+                if (wasMusicPlayingBeforeSequence) {
+                    music.play();
+                }
             }, 500);
         }
 
@@ -687,7 +716,7 @@
                 }
                 if (!hasTriggeredError) {
                     clickCount++;
-                    if (clickCount === 20) triggerChainError(); // Error triggers on 3rd click
+                    if (clickCount === 20) triggerChainError(); 
                 }
                 showModal(data.text);
             };
